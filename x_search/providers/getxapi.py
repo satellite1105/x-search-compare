@@ -1,9 +1,13 @@
 """GetXAPI プロバイダー。
 
-TODO: 実際のエンドポイントURLとレスポンス仕様は GetXAPI のドキュメントを参照して確認すること。
-参考: https://getxapi.com/docs (ドキュメントURLは要確認)
+GetXAPI Advanced Search の公式仕様確認済み:
+- GET https://api.getxapi.com/twitter/tweet/advanced_search
+- 認証: Authorization: Bearer {api_key}
+- パラメータ: q (検索語), product (Latest または Top), cursor (ページネーション用)
+- limit / count / max のような取得件数指定パラメータは存在しない。
+- 1 API call あたり最大20 tweets/page。
 
-現在の実装は公開情報をもとにした推定であり、実際のレスポンス構造と異なる場合がある。
+TODO: cursor によるページネーションは未対応。複数ページ取得したい場合は要実装。
 """
 
 from __future__ import annotations
@@ -31,12 +35,12 @@ def search(query: str, limit: int, api_key: str, query_type: str = "Latest") -> 
 
     エラー時は ([], エラーメッセージ文字列) を返す。
 
-    TODO: 以下を公式ドキュメントで確認する:
-    - 正確なエンドポイントパス
-    - 認証方式 (Authorizationヘッダー or クエリパラメータ)
-    - ページネーションパラメータ名
-    - レート制限の仕様
-    - queryType の指定値・挙動 (Top/Latest で公式ドキュメント通りか要確認)
+    GetXAPI は queryType ではなく product パラメータで Top/Latest を指定する。
+    limit はAPIには渡さない（該当パラメータが存在しないため）。呼び出し側で
+    normalized.json への切り詰めに使う。
+
+    TODO: cursor によるページネーションは未対応（1ページ最大20件のみ取得）。
+    TODO: レート制限の仕様は公式ドキュメントで未確認。
     """
     headers = {
         "Authorization": f"Bearer {api_key}",
@@ -44,7 +48,7 @@ def search(query: str, limit: int, api_key: str, query_type: str = "Latest") -> 
 
     params = {
         "q": query,
-        "queryType": query_type,
+        "product": query_type,
     }
 
     try:
